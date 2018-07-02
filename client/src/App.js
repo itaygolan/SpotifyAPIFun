@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
 
 import SpotifyWebApi from 'spotify-web-api-js';
@@ -17,7 +16,9 @@ class App extends Component {
     this.state = {
       loggedIn: token ? true : false,
       nowPlaying: { name: 'Not Checked', albumArt: ''},
-      playlists: []
+      playlists: [],
+      artists: { ids: [], names: [] },
+      relatedSongs: []
     }
     //console.log(params);
   }
@@ -37,9 +38,20 @@ class App extends Component {
   getNowPlaying() {
     spotifyAPI.getMyCurrentPlaybackState()
       .then((res) => {
+        
         this.setState({ 
           nowPlaying: { name: res.item.name, albumArt: res.item.album.images[0].url}
         });
+        
+        res.item.artists.forEach(artist => {
+          this.setState({
+            artists: {
+              ids: [...this.state.artists.ids, artist.id],
+              names: [...this.state.artists.names, artist.name]
+            }
+          });
+        
+        })
       })
   }
 
@@ -54,9 +66,18 @@ class App extends Component {
         });
   }
 
+  showRelatedSongs() {
+    spotifyAPI.getArtistTopTracks(this.state.artists.ids[0], 'GB')
+      .then(res => {
+        res.tracks.forEach(track => {
+          this.setState({
+            relatedSongs: [...this.state.relatedSongs, track.name]
+          })
+        })
+      })
+  }
+
   render() {
-
-
 
     return (
       <div className="App">
@@ -76,14 +97,29 @@ class App extends Component {
         <div>
           {this.state.loggedIn &&
             <button onClick={() => this.getAllPlaylists()} >
-              See Albums
+              See Your Playlists
           </button>}
         </div>
         <div>
-          Albums: {
+          Playlists: {
             this.state.loggedIn &&
             <ul>
               { this.state.playlists.map(data => <li key={data}>{data}</li>) }
+            </ul>
+          }
+        </div>
+        
+        <div>
+          {this.state.loggedIn &&
+            <button onClick={() => this.showRelatedSongs()} >
+              Related Songs
+            </button>}
+        </div>
+        <div>
+          Related Songs: {
+            this.state.loggedIn &&
+            <ul>
+              { this.state.relatedSongs.map(data => <li key={data}>{data}</li>) }
             </ul>
           }
         </div>
